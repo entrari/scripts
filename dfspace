@@ -1,0 +1,65 @@
+#!/sbin/sh
+#       Copyright 1990 NCR Corporation - Dayton, Ohio, USA
+#ident  "@(#)cmd/.adm:dfspace   1.7"
+
+
+#ident  "@(#)adm:dfspace        1.8.1.2"
+
+# dfspace - d(isk) f(ree) space
+# Calculate available disk space in all mounted filesystems
+# with the exception of pseudo file systems such as /proc and /dev/df.
+#
+# Alternately, report on filesystems/devices specified on cmd-line.
+#   Filesystem may be 1K bytes/block, but, df uses 512 bytes/block.
+#
+
+# get free and allocated space.
+# add sed script to take : out of nfs filesystem names
+df -t | sed s+:/+!/+ | nawk '
+BEGIN { FS=":"; free = -1; Blksize=512; Mbyte=1048576; CONST = Blksize / Mbyte }
+{
+  if (free == -1) {     # free is toggled every other line.
+        split($1,fsptr,"("); FSYS=fsptr[1]
+#ifdef NCR_V3
+        if (NF == 3) {
+                split($3,freeptr," "); free=freeptr[1]+0
+        } else {
+#endif
+                split($2,freeptr," "); free=freeptr[1]+0
+#ifdef NCR_V3
+        }
+#endif
+        if( free == 0 && substr(freeptr[1],1,1) != "0" ) {
+                free = -1; next
+        }
+        next
+  }
+  split($2,allocptr," "); alloc = allocptr[1]+0
+  if (alloc == 0) alloc = 1;                    # avoid division by zero
+  TFREE= (free * CONST) - .005                  # force rounding down.
+  TALLOC= (alloc * CONST) - .005                # force rounding down.
+  PCT=free * 100 / alloc
+  if (TFREE < 0) TFREE=0
+  if (TALLOC < 0) TALLOC=0
+
+#ifdef NCR_V3
+  if (FSYS !~ /^\/proc/ && FSYS !~ /^\/dev\/fd/ && FSYS !~ /^\/stats/ && FSYS !~ /^\/cache/) 
+#endif
+        printf ("%s:\tDisk space: %#6.2f MB of %#6.2f MB available (%#5.2f%%).\n", FSYS, TFREE, TALLOC, PCT)
+  Cumfree += free; Cumalloc += alloc;
+  free = -1     # reset flag/variable for next set of two lines
+}
+END {
+#ifdef NCR_V3
+    if (Cumalloc > 0) {
+#endif
+        CumPct=Cumfree * 100 / Cumalloc
+        Cumfree= (Cumfree * CONST) - .005       # force rounding down.
+        Cumalloc= (Cumalloc * CONST) - .005     # force rounding down.
+        printf ("\nTotal Disk Space: %#6.2f MB of %#6.2f MB available (%#5.2f%%).\n", Cumfree, Cumalloc, CumPct)
+#ifdef NCR_V3
+    }
+#endif
+}'
+
+# end of disk space calculation.
