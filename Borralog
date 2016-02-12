@@ -1,0 +1,13 @@
+#!/bin/sh
+DIR_LOG=/gridfobr_d1/HLML/API_BR/log
+#DIR_LOG_PLVA=/grid_frontoffice/HLML/API_PLVA/log
+export DIR_LOG
+cd ${DIR_LOG}
+find . -mtime +0 -name "*.log" -exec rm -Rf {} \;
+find . -mtime +0 -name "*.err" -exec rm -Rf {} \;
+find . -mtime +0 -name "*.dump" -exec rm -Rf {} \;
+find . -mtime +0 -name "*.gz" -exec rm -Rf {} \;
+#cd ${DIR_LOG_PLVA}
+#find . -mtime +1 -name "*.log" -exec rm -Rf {} \;
+#find . -mtime +1 -name "*.err" -exec rm -Rf {} \;
+#find . -mtime +1 -name "*.dump" -exec rm -Rf {} \;
